@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-pages/
+release/
+*.log
+.viewer/
+viewer/shots/
+.DS_Store

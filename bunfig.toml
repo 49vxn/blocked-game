@@ -1,0 +1,4 @@
+[test]
+# _attic is local archived material, including an old workspace copy with its
+# own tests. It is not project source and must not inflate the suite.
+pathIgnorePatterns = ["_attic/**", "node_modules/**"]
