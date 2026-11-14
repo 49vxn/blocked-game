@@ -126,7 +126,11 @@ function menu() {
     if (line) line.innerHTML = onlineLine(list)
     // No server behind this page (a static build): do not offer a door that
     // only leads to "could not reach the server".
-    if (!list) card.querySelector('[data-go="online"]')?.remove()
+    if (!list) {
+      card.querySelector('[data-go="online"]')?.remove()
+      const foot = card.querySelector('.menu-foot')
+      if (foot) foot.textContent = 'Two games, one school. Survival drops you into Wellington College while it tears itself apart. Bed Wars is the classic four-team fight. Both run here against bots.'
+    }
   })
   app.querySelectorAll<HTMLButtonElement>('[data-go]').forEach((b) =>
     b.addEventListener('click', () => {
