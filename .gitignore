@@ -6,3 +6,4 @@ release/
 .viewer/
 viewer/shots/
 .DS_Store
+.wrangler/
