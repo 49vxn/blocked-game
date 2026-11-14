@@ -1,17 +1,24 @@
 # Blocked
 
-Two games in one voxel engine, built in the browser with three.js.
+Our school in blocks. Two games, one voxel engine, in the browser with three.js.
+
+**Play it: https://49vxn.github.io/blocked-game/** — no install, no account. Both
+modes run in the tab against bots.
 
 - **School Survival** — Wellington College rebuilt in blocks, 64 × 32 × 64. Eight
-  seats, a 150-second round, and three disasters in a shuffled order at 20, 55 and
-  90 seconds: a meteor takes the library roof, the field floods, the science
-  corridors split. Red rings mark every impact before it lands; a meteor shower
-  hunts anyone standing in the open. A gold beacon calls in a supply drop that
-  heals the first survivor to reach it. Last one standing wins.
+  seats, a 150-second round, and three disasters in a shuffled order: a meteor
+  takes the library roof, the science corridors split, and the field floods layer
+  by layer. Every impact is marked before it lands; a meteor shower hunts anyone
+  standing in the open. A gold beacon calls in a supply drop that heals the first
+  survivor to reach it. Standing in flood water costs health from the first layer:
+  ankle deep is 1 HP a second, waist deep is 2. Last one standing wins.
 - **Bed Wars** — four teams on floating islands, beds to defend, forges,
   generators, a shop and bots that play the whole round.
 
 ## Run it
+
+The static build on GitHub Pages runs solo only. To play with friends on one
+network, run the game server too:
 
 ```sh
 bun install
@@ -20,7 +27,7 @@ bun run start        # http://localhost:3000
 ```
 
 For development, `bun run dev:node` serves the client with live reload and the
-game server on one port.
+game server on one port. `bun run build:pages` makes the static build.
 
 Checks:
 
@@ -43,8 +50,9 @@ bun test --max-concurrency 1 --timeout 10000
 | Chat | T |
 | Pause | Esc |
 
-Survival gives every player wool to wall themselves in. Water slows you to 45%
-speed and lets you swim up with Space; holding a jump clears the surface.
+Clicking Play enters full screen and captures the mouse; Escape gives the cursor
+back. Survival gives every player wool to wall themselves in. Water slows you to
+45% speed and lets you swim up with Space.
 
 ## Layout
 
@@ -53,15 +61,12 @@ speed and lets you swim up with Space; holding a jump clears the surface.
 - `src/games/bedwars/` — the game layer: room rules, Bed Wars arenas, the campus
   map (`maps/campus.ts`), survival disasters (`sim/survival.ts`), bots, protocol
   and the browser client.
-- `src/server/` — the Node HTTP/WebSocket host.
-- `src/games/bedwars/bots/survival.ts` — survivor bots that dodge marked impacts
-  and climb out of the water.
+- `src/server/` — the Node HTTP/WebSocket host used for LAN play.
 - `tests/` — headless coverage for physics, combat, rooms, maps, bots and the
   survival round.
 
 ## Credits
 
-This standalone game incorporates the existing Clache engine and school-survival
-work from the Blocked Spawn world. Textures are painted in code from 16 × 16
-recipes; sounds are synthesised with Web Audio. Portions of the engine are
-adapted from Voxelize; see `THIRD_PARTY_NOTICES.md` for its MIT licence.
+Textures are painted in code from 16 × 16 recipes and sounds are synthesised with
+Web Audio, so the game ships with no art or audio files. Portions of the engine
+are adapted from Voxelize; see `THIRD_PARTY_NOTICES.md` for its MIT licence.

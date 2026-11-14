@@ -124,6 +124,9 @@ function menu() {
   poll(card, (list) => {
     const line = document.getElementById('online')
     if (line) line.innerHTML = onlineLine(list)
+    // No server behind this page (a static build): do not offer a door that
+    // only leads to "could not reach the server".
+    if (!list) card.querySelector('[data-go="online"]')?.remove()
   })
   app.querySelectorAll<HTMLButtonElement>('[data-go]').forEach((b) =>
     b.addEventListener('click', () => {
