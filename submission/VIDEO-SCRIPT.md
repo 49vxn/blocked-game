@@ -29,8 +29,8 @@ shower from 30s. Record one continuous round and cut to the beats you got.
 
 | # | Time | On screen | Action | Voiceover |
 |---|------|-----------|--------|-----------|
-| 1 | 0:00–0:05 | Menu, "Blocked" | Still | "Our school, in blocks." |
-| 2 | 0:05–0:18 | Spawn corridor → courtyard | Click **School Survival**, walk out, pan left→right | "Wellington College, rebuilt block by block. Every round, the school attacks you three times." |
+| 1 | 0:00–0:05 | Menu, "Blocked" | Still | "Our school blocks every game site. So we built the school." |
+| 2 | 0:05–0:18 | Spawn corridor → courtyard | Click **School Survival**, walk out, pan left→right | "Wellington College, block for block. Three times a round, the building is the enemy." |
 | 3 | 0:18–0:30 | **First disaster impact** — banner already up at 5s | Look at the target and hold through the flash and boom | "Every disaster is marked before it lands. This one takes the library roof." |
 | 4 | 0:30–0:44 | Red rings, then a **fireball falling into the open** | Keep walking; hold the shot on a falling meteor and its crater | "And then the shower starts. You can see them coming, and they aim at whoever is standing in the open." |
 | 5 | 0:44–0:58 | **Earthquake**: screen bucking, ceiling coming down | Stand inside for a second so the roof damage ticks, then run into the open | "The quake throws you off your feet, and anything with a roof over its head comes down." |
@@ -46,8 +46,8 @@ frame: it does the selling.
 
 ## Voiceover lines (about 40 seconds of speech in total)
 
-1. "Our school, in blocks."
-2. "Wellington College, rebuilt block by block. Every round, the school attacks you three times."
+1. "Our school blocks every game site. So we built the school."
+2. "Wellington College, block for block. Three times a round, the building is the enemy."
 3. "Every disaster is marked before it lands. This one takes the library roof."
 4. "And then the shower starts. You can see them coming, and they aim at whoever is standing in the open."
 5. "The quake throws you off your feet, and anything with a roof over its head comes down."

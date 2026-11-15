@@ -1,9 +1,15 @@
 # Blocked
 
-Our school in blocks. Two games, one voxel engine, in the browser with three.js.
+**A survival game set in our school, where the building is the enemy.** Three times
+a round a disaster tears part of it apart, bots fill the empty seats, and the last
+student standing wins.
 
-**Play it: https://49vxn.github.io/blocked-game/** — no install, no account. Both
-modes run in the tab against bots.
+Our school blocks every game site. Exam week, everything blocked at lunch, nothing
+to do on the network. So this runs from one laptop on the school network: friends
+open a URL and play in the browser — no internet, no installs, no accounts.
+
+**Play it: https://49vxn.github.io/blocked-game/** — the public build runs solo
+against bots; the LAN server is how a class plays together.
 
 - **School Survival** — Wellington College rebuilt in blocks, 64 × 32 × 64. Eight
   seats, a 115-second round, and three disasters in a shuffled order: a meteor
