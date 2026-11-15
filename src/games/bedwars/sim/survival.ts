@@ -3,9 +3,13 @@ import { TPS } from '../constants'
 import type { World } from '../../../engine/world'
 
 export type Disaster = 'meteor' | 'flood' | 'earthquake'
-export const SURVIVAL_SECONDS = 150
-export const SURVIVAL_SLOTS = [20, 55, 90] as const
-export const WARN_SECONDS = 10
+export const SURVIVAL_SECONDS = 115
+// Faster pace: the first hit lands inside thirteen seconds and the last one
+// leaves a short, loud tail instead of a quiet minute.
+export const SURVIVAL_SLOTS = [12, 42, 72] as const
+export const WARN_SECONDS = 7
+/** How long the ground keeps bucking after the earthquake lands. */
+export const QUAKE_TICKS = 6 * TPS
 export const METEOR_FLIGHT_TICKS = 6 * TPS
 
 /** A visual-only flight ending exactly on the authoritative impact tick. */
@@ -32,8 +36,12 @@ export function applyDisaster(world: World, kind: Disaster): void {
       if ((x - 35) ** 2 + (z - 45) ** 2 <= 25)
         for (let y = 20; y <= 22; y++) world.set(x, y, z, AIR)
   } else if (kind === 'earthquake') {
+    // The science corridors come down properly: three bays open through both
+    // floors, and the ceiling above the run drops in patches, so the damage is
+    // obvious from the doorway instead of three slots in a wall.
     for (const [z0, z1] of [[41, 42], [44, 46], [48, 49]])
-      for (let x = 15; x <= 17; x++) for (let y = 2; y <= 9; y++) for (let z = z0; z <= z1; z++) world.set(x, y, z, AIR)
+      for (let x = 14; x <= 19; x++) for (let y = 2; y <= 11; y++) for (let z = z0; z <= z1; z++) world.set(x, y, z, AIR)
+    for (let x = 14; x <= 19; x++) for (let z = 40; z <= 50; z++) if (world.get(x, 11, z) !== AIR && (x * 3 + z) % 4 === 0) world.set(x, 11, z, AIR)
   } else {
     for (let y = 1; y <= 4; y++) fillFieldLayer(world, y)
   }

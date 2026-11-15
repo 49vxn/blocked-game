@@ -5,7 +5,7 @@ import { roomParams, createBedwarsRoom } from '../src/games/bedwars/server'
 import { TPS } from '../src/games/bedwars/constants'
 import { AIR, BLACKBOARD, BOOKSHELF, DOOR, FLOOD_WATER, PLANKS, blockDef } from '../src/games/bedwars/blocks'
 import { drawTile, PATTERNS } from '../src/engine/render/textures'
-import { applyDisaster, survivalSchedule, meteorPosition, METEOR_FLIGHT_TICKS, SURVIVAL_SECONDS } from '../src/games/bedwars/sim/survival'
+import { applyDisaster, survivalSchedule, meteorPosition, METEOR_FLIGHT_TICKS, SURVIVAL_SECONDS, SURVIVAL_SLOTS, WARN_SECONDS } from '../src/games/bedwars/sim/survival'
 import { TestClient, ticks } from './room-helpers'
 import { IDLE_INPUT, stepMovement } from '../src/engine/physics'
 import { World } from '../src/engine/world'
@@ -137,12 +137,12 @@ describe('campus survival', () => {
     a.put(2.5, 5, 30.5)
     // Keep the player alive to exercise the entire schedule; damage is covered separately.
     a.p.protectedTicks = 160 * TPS
-    ticks(room, 91 * TPS)
+    ticks(room, (SURVIVAL_SLOTS[2] + 1) * TPS)
     const events = a.events('title')
     // One banner per disaster: a ten-second warning, and then the disaster
     // announces itself (red marks, rising water, a split corridor).
     for (const kind of ['METEOR', 'FLOOD', 'EARTHQUAKE']) {
-      expect(events.filter((e) => e === `${kind} IN 10 SECONDS`)).toHaveLength(1)
+      expect(events.filter((e) => e === `${kind} IN ${WARN_SECONDS} SECONDS`)).toHaveLength(1)
       expect(events).not.toContain(kind)
     }
     expect(room.world.get(35, 21, 45)).toBe(AIR)
@@ -150,7 +150,9 @@ describe('campus survival', () => {
     // If flood is the final slot, the second layer takes four seconds to rise.
     ticks(room, 4 * TPS)
     expect(room.world.get(30, 2, 8)).toBe(FLOOD_WATER)
-    ticks(room, 56 * TPS)
+    // Run the clock out; stop the moment the verdict lands so the lobby reset
+    // has not started yet.
+    while (room.phase === 'playing') ticks(room, 1)
     expect(room.phase).toBe('ended')
     expect(a.last('summary')?.winnerName).toBe('Ash')
   })
@@ -184,13 +186,14 @@ describe('campus survival', () => {
     const a = new TestClient(room, 'Ash')
     ticks(room, 13 * TPS)
     a.put(2.5, 5, 30.5)
-    ticks(room, 28 * TPS)
+    ticks(room, 31 * TPS)
     expect(a.events().some((text) => /meteor shower/i.test(text))).toBe(true)
     ticks(room, 3 * TPS)
     expect(a.p.health).toBeLessThan(20)
     // Avoid later shower damage while checking the late flood.
     a.p.protectedTicks = 120 * TPS
-    ticks(room, 100 * TPS)
+    // Out to 100s: past the last disaster slot and both late-flood stages.
+    ticks(room, 66 * TPS)
     // The late flood gets one banner when the water starts rising, not a
     // warning plus a second stage banner ten seconds later.
     expect(a.events('title')).toContain('CAMPUS FLOODING')
@@ -240,13 +243,13 @@ describe('campus survival', () => {
     const a = new TestClient(room, 'Ash')
     ticks(room, 13 * TPS)
     a.p.protectedTicks = 150 * TPS
-    while (!a.events('title').includes('METEOR IN 10 SECONDS') && room.phase === 'playing') ticks(room, 1)
+    while (!a.events('title').includes(`METEOR IN ${WARN_SECONDS} SECONDS`) && room.phase === 'playing') ticks(room, 1)
     const mark = a.last('danger')
     expect(mark).toMatchObject({ x: 35, y: 21, z: 45, radius: 5, meteor: true })
-    expect(mark!.until - room.tickCount).toBe(10 * TPS)
+    expect(mark!.until - room.tickCount).toBe(WARN_SECONDS * TPS)
     const late = new TestClient(room, 'Bea')
     expect(late.last('danger')).toEqual(mark)
-    ticks(room, 10 * TPS)
+    ticks(room, WARN_SECONDS * TPS)
     expect(a.last('explosion')).toMatchObject({ x: 35.5, z: 45.5 })
   })
 
@@ -255,7 +258,7 @@ describe('campus survival', () => {
     const a = new TestClient(room, 'Ash')
     ticks(room, 13 * TPS)
     a.put(2.5, 5, 30.5)
-    ticks(room, 28 * TPS)
+    ticks(room, 31 * TPS)
     const warning = a.last('danger')
     expect(warning).toBeDefined()
     expect(warning?.x).toBe(2)
@@ -274,7 +277,7 @@ describe('campus survival', () => {
     a.p.protectedTicks = 150 * TPS
     const order = room.gameView().next?.label
     // Wait until the independently shuffled flood fires.
-    while (!a.events('title').includes('FLOOD IN 10 SECONDS') && room.phase === 'playing') ticks(room, 1)
+    while (!a.events('title').includes(`FLOOD IN ${WARN_SECONDS} SECONDS`) && room.phase === 'playing') ticks(room, 1)
     expect(order).toBeDefined()
     expect(room.world.get(30, 4, 8)).toBe(AIR)
     // Ten seconds to the flood, then four seconds per layer up to the fourth.
@@ -287,7 +290,7 @@ describe('campus survival', () => {
     const a = new TestClient(room, 'Ash')
     ticks(room, 13 * TPS)
     a.p.protectedTicks = 150 * TPS
-    ticks(room, 124 * TPS)
+    ticks(room, 95 * TPS)
     a.msgs.length = 0
     ticks(room, 4 * TPS)
     const packets = a.msgs.filter((m) => m.t === 'blocks')
@@ -382,7 +385,7 @@ describe('campus survival', () => {
     ticks(room, 13 * TPS)
     a.put(2.5, 5, 30.5); b.put(4.5, 5, 30.5)
     a.p.protectedTicks = b.p.protectedTicks = 160 * TPS
-    ticks(room, 150 * TPS)
+    ticks(room, (SURVIVAL_SECONDS + 1) * TPS)
     expect(room.phase).toBe('ended')
     const summary = a.last('summary')
     expect(summary?.survivors).toEqual(['Ash', 'Bea'])

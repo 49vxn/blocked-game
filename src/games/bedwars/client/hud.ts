@@ -1,5 +1,6 @@
 import { TEAM_COLORS, TEAM_NAMES, TEAMS, type TeamId } from '../blocks'
 import { BRAND, MAX_HEALTH, TPS } from '../constants'
+import { SURVIVAL_SECONDS } from '../sim/survival'
 import { OFFERS, TOOL_TIER_COST, UPGRADES, type Offer, type OfferCategory } from '../shop'
 import { countItem, HOTBAR, INVENTORY_SIZE, STORAGE_SIZE, type Slot } from '../../../engine/inventory'
 import { ARMOR_ORDER, AXES, item, PICKAXES } from '../items'
@@ -584,7 +585,7 @@ export class Hud {
     else if (view.phase === 'playing') {
       if (upgrade) rows.push(`<div class="line muted">Time left <b>${clock(UPGRADE_ROUND_TICKS - g.clock())}</b></div>`)
       else if (survival) {
-        rows.push(`<div class="line muted">Survive <b>${clock(150 * TPS - g.clock())}</b></div>`)
+        rows.push(`<div class="line muted">Survive <b>${clock(SURVIVAL_SECONDS * TPS - g.clock())}</b></div>`)
         rows.push(`<div class="line">Alive <b>${g.views.filter((p) => p.alive).length}</b></div>`)
         if (view.next) rows.push(`<div class="line">${view.next.label} in <b>${clock(view.next.in - (g.clock() - view.clock))}</b></div>`)
       } else {

@@ -6,9 +6,9 @@ Our school in blocks. Two games, one voxel engine, in the browser with three.js.
 modes run in the tab against bots.
 
 - **School Survival** — Wellington College rebuilt in blocks, 64 × 32 × 64. Eight
-  seats, a 150-second round, and three disasters in a shuffled order: a meteor
-  takes the library roof, the science corridors split, and the field floods layer
-  by layer. Every impact is marked before it lands; a meteor shower hunts anyone
+  seats, a 115-second round, and three disasters in a shuffled order: a meteor
+  takes the library roof, the quake bounces you and brings the science corridors
+down, and the field floods layer by layer. Every impact is marked before it lands; a meteor shower hunts anyone
   standing in the open. A gold beacon calls in a supply drop that heals the first
   survivor to reach it. Standing in flood water costs health from the first layer:
   ankle deep is 1 HP a second, waist deep is 2. Last one standing wins.

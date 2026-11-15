@@ -60,7 +60,7 @@ import { NO_UPGRADES, OFFERS, TOOL_TIER_COST, UPGRADES, type TeamUpgrades, type 
 import { formatParkourTime, newParkourProgress, PARKOUR_FINISH_WINDOW, PARKOUR_ROUND_BREAK, PARKOUR_ROUNDS, parkourSelf, type ParkourProgress } from './sim/parkour'
 import { canPickupDrop, isHomeGenerator, type Drop, type Generator } from './sim/generators'
 import { ffaBotLevel, FFA_DIFFICULTY_COOLDOWN, FFA_DIFFICULTY_INTERVAL } from './sim/ffa'
-import { applyDisaster, disasterTick, fillFieldLayer, survivalSchedule, SURVIVAL_SECONDS, WARN_SECONDS, type Disaster } from './sim/survival'
+import { applyDisaster, disasterTick, fillFieldLayer, survivalSchedule, QUAKE_TICKS, SURVIVAL_SECONDS, WARN_SECONDS, type Disaster } from './sim/survival'
 
 export type Sink = (msg: ServerMessage) => void
 
@@ -203,7 +203,8 @@ export class Room {
   private survivalFired = new Set<number>()
   readonly survivalRocks: { x: number; y: number; z: number; at: number }[] = []
   private survivalShoves = new Map<number, number>()
-  private survivalNextRock = 28 * TPS
+  private survivalNextRock = 30 * TPS
+  private survivalQuakeUntil = 0
   /** One line per shower phase, not one per volley: 20 banners a round is noise. */
   private survivalShowerAnnounced = false
   private survivalFieldFlood: { layer: number; next: number } | null = null
@@ -1442,7 +1443,8 @@ export class Room {
       this.survivalWarned.clear()
       this.survivalFired.clear()
       this.survivalRocks.length = 0
-      this.survivalNextRock = 28 * TPS
+      this.survivalNextRock = 30 * TPS
+      this.survivalQuakeUntil = 0
       this.survivalShowerAnnounced = false
       this.survivalFieldFlood = null
       this.survivalSupply = null
@@ -1772,19 +1774,25 @@ export class Room {
       if (elapsed >= at - WARN_SECONDS * TPS && !this.survivalWarned.has(i)) {
         this.survivalWarned.add(i)
         if (kind === 'meteor') this.broadcast({ t: 'danger', x: 35, y: 21, z: 45, radius: 5, until: this.phaseStart + at, meteor: true })
-        this.broadcastEvent('title', `${kind.toUpperCase()} IN 10 SECONDS`, kind === 'meteor' ? 'Leave the library roof' : kind === 'flood' ? 'Leave the field' : 'Leave the science corridors')
+        this.broadcastEvent('title', `${kind.toUpperCase()} IN ${WARN_SECONDS} SECONDS`, kind === 'meteor' ? 'Leave the library roof' : kind === 'flood' ? 'Leave the field' : 'Leave the science corridors')
       }
       if (elapsed >= at && !this.survivalFired.has(i)) {
         this.survivalFired.add(i)
         if (kind === 'flood') this.survivalFieldFlood = { layer: 1, next: elapsed }
         else applyDisaster(this.world, kind)
         if (kind === 'meteor') this.broadcast({ t: 'explosion', x: 35.5, y: 22, z: 45.5, power: 5 })
+        if (kind === 'earthquake') {
+          // Six seconds of the ground bucking, and a bang along the corridor so
+          // everyone in the school feels it, not just the players standing in it.
+          this.survivalQuakeUntil = elapsed + QUAKE_TICKS
+          for (const z of [41.5, 45, 48.5]) this.broadcast({ t: 'explosion', x: 16.5, y: 4, z, power: 2 })
+        }
         for (const p of this.players.values()) {
           if (!p.alive || p.eliminated) continue
           if (kind === 'meteor') {
             const d = Math.hypot(p.x - 35.5, p.y - 22, p.z - 45.5)
             if (d < 14) this.hurt(p, d < 6 ? 20 : d < 10 ? 10 : 4, 'meteor')
-          } else if (kind === 'earthquake' && Math.abs(p.x - 16.5) < 4 && p.y > 2 && p.y < 10 && [[41, 42], [44, 46], [48, 49]].some(([z0, z1]) => p.z >= z0 - 2 && p.z <= z1 + 2)) {
+          } else if (kind === 'earthquake' && p.x > 12 && p.x < 22 && p.y > 1 && p.y < 13 && p.z > 38 && p.z < 52) {
             this.hurt(p, 10, 'quake')
           }
         }
@@ -1792,8 +1800,22 @@ export class Room {
     }
     if (this.survivalFieldFlood && elapsed >= this.survivalFieldFlood.next) {
       fillFieldLayer(this.world, this.survivalFieldFlood.layer++)
-      this.survivalFieldFlood.next = elapsed + 4 * TPS
+      this.survivalFieldFlood.next = elapsed + 3 * TPS
       if (this.survivalFieldFlood.layer > 4) this.survivalFieldFlood = null
+    }
+    if (elapsed < this.survivalQuakeUntil) {
+      // The ground throws everyone up and sideways a few times a second, the way
+      // a quake should feel: not a banner, a body that will not stay still.
+      if (elapsed % 7 === 0) for (const p of this.players.values()) {
+        if (!p.alive || p.eliminated) continue
+        p.vy = 4.4 / TPS
+        p.vx += (this.random() - 0.5) * (3 / TPS)
+        p.vz += (this.random() - 0.5) * (3 / TPS)
+        p.knockbackTicks = 5
+        p.kbGrace = 5
+        this.send(p, { t: 'velocity', vx: p.vx, vy: p.vy, vz: p.vz })
+      }
+      if (elapsed % 17 === 0) this.broadcast({ t: 'explosion', x: 14 + this.random() * 6, y: 3 + this.random() * 6, z: 40 + this.random() * 10, power: 1 })
     }
     this.stepSurvivalPressure(elapsed)
     this.stepSurvivalSupply(elapsed)
@@ -1816,25 +1838,27 @@ export class Room {
 
   private stepSurvivalPressure(elapsed: number): void {
     if (elapsed >= this.survivalNextRock) {
+      // A shower has to feel like one: two rocks every eight seconds, aimed at
+      // people who are standing still in the open. One rock every two minutes is
+      // a rumour, not a disaster.
       const alive = [...this.players.values()].filter((p) => p.alive && !p.eliminated)
-      this.survivalNextRock = elapsed + (elapsed >= 95 * TPS ? 70 : 120)
-      if (alive.length) {
-        const target = alive[Math.floor(this.random() * alive.length)]
+      this.survivalNextRock = elapsed + 8 * TPS
+      const volley = alive.sort(() => this.random() - 0.5).slice(0, 2)
+      for (const target of volley) {
         const x = Math.floor(target.x), z = Math.floor(target.z)
         let y = this.world.sy - 1
         while (y >= 0 && (this.world.get(x, y, z) === AIR || this.world.get(x, y, z) === FLOOD_WATER)) y--
         // The field floor is y=0: it is a valid target, but the crater clamp
         // below refuses to dig it, so a rock here scorches without opening the void.
-        if (y >= 0) {
-          const delay = Math.round(2.5 * TPS)
-          this.survivalRocks.push({ x, y, z, at: elapsed + delay })
-          this.broadcast({ t: 'danger', x, y, z, radius: 2.5, until: this.tickCount + delay })
-          // The red mark and the boom are the per-rock signal; the banner is per phase.
-          if (!this.survivalShowerAnnounced) {
-            this.survivalShowerAnnounced = true
-            this.broadcastEvent('title', 'METEOR SHOWER', 'Red marks aim at the open — move, or get under a roof')
-          }
-        }
+        if (y < 0) continue
+        const delay = Math.round(2.5 * TPS)
+        this.survivalRocks.push({ x, y, z, at: elapsed + delay })
+        this.broadcast({ t: 'danger', x, y, z, radius: 2.5, until: this.tickCount + delay })
+      }
+      // The red marks and the booms are the per-rock signal; the banner is per phase.
+      if (!this.survivalShowerAnnounced && alive.length) {
+        this.survivalShowerAnnounced = true
+        this.broadcastEvent('title', 'METEOR SHOWER', 'Red marks aim at the open — move, or get under a roof')
       }
     }
     for (const rock of this.survivalRocks.filter((r) => r.at <= elapsed)) {
@@ -1852,7 +1876,8 @@ export class Room {
       }
     }
     for (let i = this.survivalRocks.length - 1; i >= 0; i--) if (this.survivalRocks[i].at <= elapsed) this.survivalRocks.splice(i, 1)
-    const stage = elapsed >= 125 * TPS ? 2 : elapsed >= 105 * TPS ? 1 : 0
+    // After the last disaster slot (72s): the field floods at 78s, then deepens at 95s.
+    const stage = elapsed >= 95 * TPS ? 2 : elapsed >= 78 * TPS ? 1 : 0
     if (stage > this.survivalFloodStage) {
       // One banner when the water starts rising; the water itself is the rest of the warning.
       if (stage === 1) this.broadcastEvent('title', 'CAMPUS FLOODING', 'Get to higher ground')
