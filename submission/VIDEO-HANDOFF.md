@@ -18,9 +18,11 @@ Repo: **https://github.com/49vxn/blocked-game**
   **78s**). Warnings **7 seconds** before each disaster.
 - **Flood water damages from the first layer**: ankle deep 1 HP/s, waist deep
   2 HP/s (head under = drowning).
-- **Meteor shower** from 30s: two marked rocks every 8 seconds, aimed at players
-  standing in the open.
+- **Meteor shower** from 30s: two **visible fireballs** every 8 seconds, each marked
+  with a red ring, aimed at players standing in the open.
 - **Supply drop**: gold beacon, first survivor to reach it heals to 25 HP.
+- **Earthquake**: 6 seconds of bouncing, and **1 HP a second while you are under a
+  roof** — the open is the safe place to be.
 - **Shove (F)**: no damage, all knockback.
 - **Bed Wars**: four teams, four beds, forges, generators, a shop, bots that play
   the whole round.

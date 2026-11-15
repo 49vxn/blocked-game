@@ -188,7 +188,7 @@ describe('campus survival', () => {
     a.put(2.5, 5, 30.5)
     ticks(room, 31 * TPS)
     expect(a.events().some((text) => /meteor shower/i.test(text))).toBe(true)
-    ticks(room, 3 * TPS)
+    ticks(room, 6 * TPS)
     expect(a.p.health).toBeLessThan(20)
     // Avoid later shower damage while checking the late flood.
     a.p.protectedTicks = 120 * TPS
@@ -263,10 +263,11 @@ describe('campus survival', () => {
     expect(warning).toBeDefined()
     expect(warning?.x).toBe(2)
     expect(warning?.z).toBe(30)
+    expect(warning?.meteor).toBe(true)
     expect(warning!.until).toBeGreaterThan(room.tickCount)
     const late = new TestClient(room, 'Bea')
     expect(late.last('danger')).toEqual(warning)
-    ticks(room, 3 * TPS)
+    ticks(room, 6 * TPS)
     expect(a.last('explosion')).toBeDefined()
   })
 
@@ -371,7 +372,7 @@ describe('campus survival', () => {
     expect(showerBanners.length).toBeGreaterThan(0)
     expect(showerBanners.length).toBeLessThanOrEqual(2)
     // The per-rock danger marks still fire for every volley.
-    expect(a.msgs.filter((m) => m.t === 'danger' && !m.meteor).length).toBeGreaterThan(5)
+    expect(a.msgs.filter((m) => m.t === 'danger').length).toBeGreaterThan(5)
     // ...and the campus floor survives them: rocks may not dig the last layer
     // or the school falls out of the world.
     expect(room.world.get(22, 0, 8)).not.toBe(AIR)

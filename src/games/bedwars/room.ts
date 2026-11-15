@@ -366,7 +366,7 @@ export class Room {
 
   private sendSurvivalMarkers(p: Player): void {
     if (this.rules.mode !== 'survival' || this.phase !== 'playing') return
-    for (const rock of this.survivalRocks) this.send(p, { t: 'danger', x: rock.x, y: rock.y, z: rock.z, radius: 2.5, until: this.phaseStart + rock.at })
+    for (const rock of this.survivalRocks) this.send(p, { t: 'danger', x: rock.x, y: rock.y, z: rock.z, radius: 2.5, until: this.phaseStart + rock.at, meteor: true })
     const meteor = this.survivalOrder.indexOf('meteor')
     if (meteor >= 0 && this.survivalWarned.has(meteor) && !this.survivalFired.has(meteor))
       this.send(p, { t: 'danger', x: 35, y: 21, z: 45, radius: 5, until: this.phaseStart + disasterTick(meteor), meteor: true })
@@ -1774,7 +1774,7 @@ export class Room {
       if (elapsed >= at - WARN_SECONDS * TPS && !this.survivalWarned.has(i)) {
         this.survivalWarned.add(i)
         if (kind === 'meteor') this.broadcast({ t: 'danger', x: 35, y: 21, z: 45, radius: 5, until: this.phaseStart + at, meteor: true })
-        this.broadcastEvent('title', `${kind.toUpperCase()} IN ${WARN_SECONDS} SECONDS`, kind === 'meteor' ? 'Leave the library roof' : kind === 'flood' ? 'Leave the field' : 'Leave the science corridors')
+        this.broadcastEvent('title', `${kind.toUpperCase()} IN ${WARN_SECONDS} SECONDS`, kind === 'meteor' ? 'Leave the library roof' : kind === 'flood' ? 'Leave the field' : 'Get out from under a roof')
       }
       if (elapsed >= at && !this.survivalFired.has(i)) {
         this.survivalFired.add(i)
@@ -1815,6 +1815,15 @@ export class Room {
         p.kbGrace = 5
         this.send(p, { t: 'velocity', vx: p.vx, vy: p.vy, vz: p.vz })
       }
+      // A roof is a hazard in a quake: ceiling comes down on anyone with one over
+      // their head. Standing in the open only means getting thrown around.
+      if (elapsed % 20 === 0) for (const p of this.players.values()) {
+        if (!p.alive || p.eliminated) continue
+        const px = Math.floor(p.x), pz = Math.floor(p.z)
+        let covered = false
+        for (let y = Math.floor(p.y) + 1; y <= Math.floor(p.y) + 9 && !covered; y++) if (blockDef(this.world.get(px, y, pz)).solid) covered = true
+        if (covered) this.hurt(p, 1, 'quake')
+      }
       if (elapsed % 17 === 0) this.broadcast({ t: 'explosion', x: 14 + this.random() * 6, y: 3 + this.random() * 6, z: 40 + this.random() * 10, power: 1 })
     }
     this.stepSurvivalPressure(elapsed)
@@ -1851,9 +1860,11 @@ export class Room {
         // The field floor is y=0: it is a valid target, but the crater clamp
         // below refuses to dig it, so a rock here scorches without opening the void.
         if (y < 0) continue
-        const delay = Math.round(2.5 * TPS)
+        // A long enough lead that the fireball is visibly falling before it
+        // lands, not just a red ring on the floor.
+        const delay = Math.round(5 * TPS)
         this.survivalRocks.push({ x, y, z, at: elapsed + delay })
-        this.broadcast({ t: 'danger', x, y, z, radius: 2.5, until: this.tickCount + delay })
+        this.broadcast({ t: 'danger', x, y, z, radius: 2.5, until: this.tickCount + delay, meteor: true })
       }
       // The red marks and the booms are the per-rock signal; the banner is per phase.
       if (!this.survivalShowerAnnounced && alive.length) {
