@@ -28,7 +28,7 @@ server.
 
 **Demo video link** (2 minutes or less, YouTube unlisted / Loom / Drive anyone-with-link)
 ```
-<your video link>
+https://49vxn.github.io/blocked-game/demo.mp4
 ```
 
 **Who did you build it for?**

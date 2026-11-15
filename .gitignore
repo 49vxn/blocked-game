@@ -7,3 +7,4 @@ release/
 viewer/shots/
 .DS_Store
 .wrangler/
+raw/
